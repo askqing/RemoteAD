@@ -81,7 +81,9 @@ python main_desktop.py
 
 ## 作者
 
-[askqing](https://github.com/askqing)
+### [问青Lab](https://github.com/askqing)
+
+### [青松awa](https://github.com/iqsawa)
 
 ## 鸣谢
 
@@ -174,7 +176,9 @@ Issues and Pull Requests are welcome!
 
 ## Author
 
-[askqing](https://github.com/askqing)
+### [AskQing Lab](https://github.com/askqing)
+
+### [QingSong](https://github.com/iqsawa)
 
 ## Acknowledgments
 
