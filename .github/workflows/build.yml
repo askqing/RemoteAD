@@ -1,0 +1,156 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [ main, master ]
+    tags: [ 'v*.*.*' ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: 'Build Type'
+        required: true
+        default: 'debug'
+        type: choice
+        options:
+          - debug
+          - release
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install buildozer cython==0.29.35
+          # Update buildozer to latest version
+          pip install --upgrade buildozer
+          # Install setuptools_rust for cryptography (still needed for other packages)
+          pip install setuptools_rust
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential git curl zip unzip openjdk-17-jdk-headless \
+            autoconf automake libtool pkg-config zlib1g-dev \
+            libncurses5-dev libncursesw5-dev libtinfo6 cmake libffi-dev libssl-dev \
+            libxml2-dev libxslt1-dev \
+            libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev gstreamer1.0-plugins-good \
+            gstreamer1.0-x gstreamer1.0-alsa gstreamer1.0-gl \
+            libmtdev-dev libjpeg-dev libpng-dev \
+            libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev \
+            m4 gettext bison flex gperf libltdl-dev \
+            cargo rustc
+
+      - name: Configure Buildozer
+        run: |
+          # Ensure existing buildozer.spec is used with correct settings
+          if [ -f buildozer.spec ]; then
+            echo "Using existing buildozer.spec"
+            # Ensure NDK API is properly set
+            sed -i 's/android.minapi = .*/android.minapi = 21/' buildozer.spec || echo "android.minapi = 21" >> buildozer.spec
+          fi
+
+      - name: Determine Build Type
+        id: build-type
+        run: |
+          # Determine build type based on trigger
+          if [ "${{ github.event_name }}" == "push" ] && [ "${{ github.ref_type }}" == "tag" ]; then
+            echo "build_type=release" >> $GITHUB_OUTPUT
+          else
+            echo "build_type=${{ github.event.inputs.build_type || 'debug' }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Build APK
+        id: build
+        env:
+          # Set ACLOCAL_PATH to include libtool macros
+          ACLOCAL_PATH: /usr/share/aclocal
+          # Fix autoconf issues
+          AUTOMAKE: /usr/bin/automake
+          AUTOCONF: /usr/bin/autoconf
+          # Add Rust path for cryptography
+          PATH: /usr/local/bin:/usr/bin:${PATH}
+        run: |
+          if [ "${{ steps.build-type.outputs.build_type }}" == "release" ]; then
+            buildozer -v android release
+          else
+            buildozer -v android debug
+          fi
+
+      - name: Find and upload APK artifact
+        run: |
+          echo "Searching for APK files..."
+          find . -name "*.apk" -type f || echo "No APK found"
+          ls -la bin/ || echo "bin directory not found"
+          ls -la .buildozer/android/platform/build-armeabi-v7a_arm64-v8a/dists/*/bin/ 2>/dev/null || echo "dist directory not found"
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: remotead-apk-${{ steps.build-type.outputs.build_type }}
+          path: |
+            bin/*.apk
+            .buildozer/android/platform/build-*/dists/*/bin/*.apk
+          retention-days: 30
+          if-no-files-found: warn
+
+      - name: Create Release
+        if: github.event_name == 'push' && github.ref_type == 'tag'
+        uses: softprops/action-gh-release@v1
+        with:
+          files: bin/*.apk
+          draft: false
+          prerelease: false
+
+  build-desktop:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt pyinstaller
+
+      - name: Build Desktop App (Linux/macOS)
+        if: matrix.os != 'windows-latest'
+        shell: bash
+        run: |
+          pyinstaller --onefile --windowed main_desktop.py
+
+      - name: Build Desktop App (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          pyinstaller --onefile --windowed main_desktop.py
+
+      - name: Upload Desktop Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: remotead-desktop-${{ matrix.os }}
+          path: dist/*
+          retention-days: 30

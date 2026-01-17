@@ -1,0 +1,17 @@
+# 网络通信
+pyzmq>=4.3.4
+# 加密解密
+pycryptodome>=3.15.0
+# 桌面GUI
+pyqt5>=5.15.7
+# 移动端GUI
+kivy>=2.1.0
+# 屏幕捕获
+mss>=6.1.0
+pyobjc-framework-Quartz>=8.5.1; sys_platform == 'darwin'
+# 图像处理
+opencv-python>=4.6.0.66
+pillow>=9.2.0
+# 其他
+pyperclip>=1.8.2
+psutil>=5.9.1

@@ -1,0 +1,55 @@
+# 备份原软件源配置
+sudo cp /etc/apt/sources.list /etc/apt/sources.list.bak
+
+# 替换为阿里云镜像源
+sudo sed -i 's@/archive.ubuntu.com/@/mirrors.aliyun.com/@g' /etc/apt/sources.list
+
+# 更新软件包列表
+sudo apt-get update
+# 安装基本编译工具
+sudo apt-get install -y build-essential git curl python3-pip python3-dev
+
+# 安装PyQt5依赖
+sudo apt-get install -y python3-pyqt5 pyqt5-dev-tools
+
+# 安装屏幕捕获依赖
+sudo apt-get install -y libxext6 libxrender1 libxtst6 libxi6
+
+# 安装文件传输相关依赖
+sudo apt-get install -y libssl-dev
+
+# 安装Buildozer依赖（用于Android编译）
+sudo apt-get install -y zip unzip openjdk-17-jdk-headless autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 cmake libffi-dev libssl-dev
+# 升级pip
+sudo pip3 install --upgrade pip
+
+# 安装项目依赖
+pip3 install pyqt5 mss pillow pyyaml cryptography kivy
+
+# 安装PyInstaller用于桌面端编译
+pip3 install pyinstaller
+
+# 安装Buildozer用于Android编译
+pip3 install buildozer
+# 进入项目目录（根据实际情况修改路径）
+cd /path/to/remote-control-project
+
+# 使用PyInstaller编译桌面端应用
+pyinstaller --onefile --windowed main_desktop.py
+
+# 编译完成后，可执行文件将位于dist目录
+ls -la dist/
+# 进入项目目录
+cd /path/to/remote-control-project
+
+# 初始化Buildozer配置
+buildozer init
+
+# 修改buildozer.spec文件，确保正确配置
+# 可以使用nano或vim编辑：nano buildozer.spec
+
+# 编译Android APK
+buildozer -v android debug
+
+# 编译完成后，APK文件将位于bin目录
+ls -la bin/
