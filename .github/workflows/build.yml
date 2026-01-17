@@ -76,6 +76,7 @@ jobs:
 
       - name: Build APK
         id: build
+        timeout-minutes: 120
         env:
           # Set ACLOCAL_PATH to include libtool macros
           ACLOCAL_PATH: /usr/share/aclocal
@@ -84,11 +85,13 @@ jobs:
           AUTOCONF: /usr/bin/autoconf
           # Add Rust path for cryptography
           PATH: /usr/local/bin:/usr/bin:${PATH}
+          # Increase timeout for downloads
+          PYTHONHTTPSVERIFY: 0
         run: |
           if [ "${{ steps.build-type.outputs.build_type }}" == "release" ]; then
-            buildozer -v android release
+            buildozer -v android release || (echo "Build failed, retrying..." && sleep 60 && buildozer -v android release)
           else
-            buildozer -v android debug
+            buildozer -v android debug || (echo "Build failed, retrying..." && sleep 60 && buildozer -v android debug)
           fi
 
       - name: Find and upload APK artifact

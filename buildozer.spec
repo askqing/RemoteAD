@@ -6,7 +6,7 @@ source.dir = .
 source.include_exts = py,png,jpg,kv,atlas
 version = 1.0
 # Use specific versions to avoid compatibility issues
-requirements = python3,kivy==2.1.0,pillow==9.5.0,pyyaml==6.0,cython==0.29.35,pycryptodome
+requirements = python3,kivy==2.0.0,pillow==9.5.0,pyyaml==6.0,cython==0.29.35,pycryptodome
 orientation = landscape
 
 # Android specific
@@ -37,4 +37,4 @@ android.build_aab = False
 # Use legacy builder for better compatibility
 android.legacy_api = True
 # Clean build every time to avoid cached issues
-android.clean_build = True 
+android.clean_build = False 
